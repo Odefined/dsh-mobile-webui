@@ -52,10 +52,10 @@ DOM 干预仅三处：注入一个遮罩 `<div>` 和一个抽屉入口 `<button>
 {
   "dsh": { "profile": { "bundles": ["...", "dsh-mobile-webui"] } },
   "dependencies": {
-    // GitHub 直装（当前）：
-    "dsh-mobile-webui": "github:Odefined/dsh-mobile-webui"
-    // 或 npm（发布后）：
-    // "dsh-mobile-webui": "^0.1.0"
+    // npm（推荐）：
+    "dsh-mobile-webui": "^0.1.0"
+    // 或 GitHub 直装：
+    // "dsh-mobile-webui": "github:Odefined/dsh-mobile-webui"
   }
 }
 ```

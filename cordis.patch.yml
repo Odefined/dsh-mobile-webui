@@ -1,0 +1,6 @@
+# dsh-mobile-webui bundle layer: inserts the plugin into the profile's Loader.
+# package.json also declares dsh.client, so the client-modules node half picks
+# the browser half into the web roster automatically once this row is enabled.
+- insert:
+    - id: mobile-webui
+      name: 'dsh-mobile-webui'

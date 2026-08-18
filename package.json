@@ -1,0 +1,39 @@
+{
+  "name": "dsh-mobile-webui",
+  "version": "0.1.0",
+  "description": "Mobile-viewport fixes for the dsh web GUI: overlay drawer sidebar, code-block scrolling, dvh/safe-area composer, 44px touch targets",
+  "type": "module",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "mobile",
+    "responsive",
+    "webui"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Odefined/dsh-mobile-webui.git"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}

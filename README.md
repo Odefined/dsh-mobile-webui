@@ -1,0 +1,104 @@
+# dsh-mobile-webui
+
+修复 dsh web GUI 在手机视口下的可用性问题（客户端插件，纯浏览器端，无构建步骤）。
+
+> Mobile-viewport fixes for the dsh web GUI as a client plugin: full-width chat
+> with an overlay drawer sidebar, swipe gestures, safe-area/dvh composer,
+> code-block horizontal scrolling and 44px touch targets. Pure browser-side,
+> no build step, zero effect on desktop widths.
+
+## 修复内容
+
+| 编号 | 内容 | 实现 |
+|---|---|---|
+| R1 | 布局：单列全宽聊天 + 抽屉收纳侧边栏 | ≤768px 无常驻轨道：grid 恒为单列，收起态侧边栏整体隐藏；入口是悬浮于左上角的原版侧边栏按钮（app 的 panel 图标 + 36px 原尺寸 + 0.45 透明度）；展开态侧边栏/详情面板为不透明覆盖式抽屉（`--dsw-alias-bg-layer-1`），遮罩点击 / Escape / 选中会话后自动关闭 |
+| R2 | 消息渲染 | 正文/行内代码自动断词（`overflow-wrap`），代码块与表格容器内横向滚动 |
+| R5 | composer 与视口 | `html/body/#root` 高度升级为 `100dvh`；meta viewport 补 `viewport-fit=cover` + `interactive-widget=resizes-content`；composer 加 `env(safe-area-inset-bottom)` 与 dvh 高度上限 |
+| R6 | 触控 | `(pointer: coarse)` 下侧边栏/会话列表/审批按钮 ≥44px；composer 内只把纯图标按钮（`button:has(> svg:only-child)`）顶到 44px，带文字的触发器保持原生尺寸以免撑破行布局 |
+
+另有四条布局层规则：①≤768px 隐藏其他插件注入的全屏背景层（`.dsh-viz-canvas` / `.dsh-viz-scrim` / `.dsh-viz-root`，不存在则自然空转）并恢复不透明页面背景——手机上可读性与续航优先；②≤768px 把 composer 弹出菜单（模型/推理等级、权限模式等）的锚定根改为 `position: static`，使菜单钳制在 composer 卡片内——原生 `right:0` 锚定在窄屏/系统显示缩放（~360 CSS px）下会把菜单推出左屏幕外；③≤768px 会话顶栏的 Session log 下载按钮去掉文字标签并清除其 `min-width: 111px`，收成 34px 纯图标；④≤768px 支持手势：明确横向的右滑展开侧边抽屉、左滑收起（触摸移动中越过 64px 阈值即触发；竖向滚动与代码块/表格的横向滚动不受劫持，监听全部 passive）。桌面端均不受影响。
+
+所有类名钩子都做词边界锚定（`[class$="_x"]` / `[class*="_x "]`），只命中组件自身的类 token——裸子串匹配会误伤内部子元素（如 `_newSessionLabel`）。
+
+层叠顺序（移动端）：抽屉入口 16 < 遮罩 17 < 侧边抽屉 18 < 详情抽屉 19 < shell 对话框层 20 < 菜单/设置浮层 1000——对话框永远压在抽屉之上、可点。
+
+明确不做（留待后续版本）：工具调用折叠/bottom sheet、审批交互改造、长任务通知。
+
+## 兼容性
+
+- **浏览器下限**：Chrome/Edge ≥ 105、Safari ≥ 15.4、Firefox ≥ 121（需要 CSS `:has()` 与 `dvh`；`100dvh` 已带 `100%` 兜底声明）。不满足的浏览器会自动忽略对应规则、退回原生 UI——插件只增不改，不会渲染报错。
+- **宿主版本**：选择器只依赖宿主的语义钩子（`data-slot` / `data-phase` / `data-sidebar-collapsed` / `data-composer-seat` / `data-conversation-scroll`）与 CSS Modules 的类名后缀（hash 前缀会变、后缀稳定）。若宿主未来大改版导致钩子落空，插件表现为静默失效（无效果、无报错），不会破坏页面。
+- **显示缩放**：Android 系统「显示大小/字体放大」场景已实测覆盖（有效 CSS 宽度 ~360px 下抽屉、弹出菜单、顶栏均正常）。
+- **与其他插件共存**：全屏背景层隐藏规则（`.dsh-viz-*`）在未安装对应插件时自然空转；抽屉/遮罩层叠固定在 shell 对话框层之下，不遮挡任何对话框。
+- **桌面端**：全部规则限定在 ≤768px 或 `(pointer: coarse)` 媒体查询内，宽屏与鼠标指针下零影响（已回归验证）。
+
+已知宿主行为：侧边栏内层根的宽度是宿主拖拽调整功能写入的内联 `style="width: 280px"`，移动端抽屉里用 `width: 100% !important` 覆盖以保持左右对称。
+
+## 工作原理
+
+前端是 hash 前缀的 CSS Modules（如 `pI_x6G_frame`），插件用稳定的选择器钩子覆盖：
+
+- 属性钩子：`data-sidebar-collapsed` / `data-details-collapsed` / `data-slot` / `[data-composer-seat]` / `[data-phase]` / `[data-conversation-scroll]`
+- 类名后缀 + 词边界锚定：`[class*="_frame"]:has(> [class*="_sidebarCol"])` 等
+- 内联 `grid-template-columns` 与内联宽度用 `!important` 覆盖
+
+DOM 干预仅三处：注入一个遮罩 `<div>` 和一个抽屉入口 `<button>`（显隐均纯 CSS 控制），修改 viewport meta。全部改动 ≤768px 或 coarse 指针下生效。
+
+## 安装
+
+在本机的 dsh web profile 中注册 bundle 并添加依赖（两处都在 `~/.dsh/profiles/web/package.json`）：
+
+```jsonc
+{
+  "dsh": { "profile": { "bundles": ["...", "dsh-mobile-webui"] } },
+  "dependencies": {
+    // GitHub 直装（当前）：
+    "dsh-mobile-webui": "github:Odefined/dsh-mobile-webui"
+    // 或 npm（发布后）：
+    // "dsh-mobile-webui": "^0.1.0"
+  }
+}
+```
+
+```bash
+cd ~/.dsh/profiles/web
+pnpm install
+# 重启 dsh web（会中断进行中的会话，请先保存工作）
+dsh web
+```
+
+重启后插件自动生效：`cordis.patch.yml` 把本包插入 Loader，`dsh.client`
+声明让 client-modules 把 `client.js` 送进 web roster。
+
+## 验证
+
+不安装即可在运行中的页面临时验证（刷新即失效）。注意 `__ModuleLoader__.load`
+只注册 factory、不执行，需手动 materialize：
+
+```js
+// Playwright run-code（或 DevTools 控制台等价操作）
+await page.addScriptTag({ content: `
+  window.__cap = null; const L = window.__ModuleLoader__; const orig = L.load;
+  L.load = (s) => { window.__cap = s; }; window.__restore = () => { L.load = orig; };
+` });
+await page.addScriptTag({ path: '<本仓库路径>/client.js' });
+await page.evaluate(() => {
+  window.__restore();
+  const mod = window.__cap.factory(() => { throw new Error('no require'); });
+  mod.apply({ effect: (fn) => fn() });  // 假 ctx：立即执行 effect
+});
+```
+
+视口 390×844 + 触屏模拟检查点：无常驻轨道、聊天列全宽、左上角原版入口按钮；
+点入口 → 不透明抽屉 + 48% 遮罩；遮罩点击 / Escape / 选中会话 / 左滑 → 抽屉关闭；
+右滑 → 抽屉展开；`pre`/`table` 容器内横向滚动；`(pointer: coarse)` 下图标按钮 ≥44px；
+meta viewport 含 `viewport-fit=cover` 与 `interactive-widget=resizes-content`。
+桌面 ≥769px 所有规则不生效（侧边栏内联展开、入口按钮不出现、背景层正常）。
+
+## 卸载
+
+从 `~/.dsh/profiles/web/package.json` 移除 bundles 与 dependencies 两处条目，`pnpm install`，重启 `dsh web`。
+
+## License
+
+MIT

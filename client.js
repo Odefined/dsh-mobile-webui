@@ -41,6 +41,18 @@ html, body, #root { height: 100%; height: 100dvh; }
 .dsh-mw-scrim { display: none; }
 /* hamburger only exists on phone widths (see media query below) */
 .dsh-mw-burger { display: none; }
+/* composer status line: small text above the card showing mode · model ·
+   effort (their composer-row labels are icon-only on phones) */
+.dsh-mw-composer-status {
+  display: none;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary, GrayText);
+  padding: 0 16px 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 @keyframes dsh-mw-drawer-left-in { from { transform: translateX(-100%); } }
 @keyframes dsh-mw-drawer-right-in { from { transform: translateX(100%); } }
@@ -147,6 +159,17 @@ html, body, #root { height: 100%; height: 100dvh; }
     padding-left: 10px;
     padding-right: 10px;
   }
+
+  /* ---- composer row goes icon-only; the text moves to a small status line
+     above the card (JS-injected .dsh-mw-composer-status) ----
+     The model picker is the trigger that carries an effort badge; hide its
+     label + effort text. (The permission-mode trigger's label is already
+     auto-hidden by the app itself whenever it has an icon.) */
+  [data-composer-seat] [class$="_trigger"]:has(> [class$="_triggerEffort"]) [class$="_triggerLabel"],
+  [data-composer-seat] [class*="_trigger "]:has(> [class$="_triggerEffort"]) [class$="_triggerLabel"],
+  [data-composer-seat] [class$="_triggerEffort"],
+  [data-composer-seat] [class*="_triggerEffort "] { display: none; }
+  .dsh-mw-composer-status { display: block; }
 
   /* Full-screen background layers from other plugins (a music visualizer's
      .dsh-viz-canvas/.dsh-viz-scrim plus its .dsh-viz-root floating trigger)
@@ -314,6 +337,67 @@ html, body, #root { height: 100%; height: 100dvh; }
         burger.addEventListener('click', onBurgerClick);
         document.body.appendChild(burger);
 
+        // Composer status line: at phone widths the row triggers are
+        // icon-only, so their text (mode · model · effort) is mirrored in
+        // small type above the card. Read live from the hidden labels; the
+        // seat observer keeps it in sync when the user switches model/mode.
+        const statusLine = document.createElement('div');
+        statusLine.className = 'dsh-mw-composer-status';
+        let statusSeat = null;
+        let statusObserver = null;
+        const updateStatus = () => {
+          const seat = document.querySelector('[data-composer-seat]');
+          if (!seat) return;
+          // the model picker is the trigger carrying an effort badge
+          const modelTrigger = seat.querySelector("[class$='_trigger']:has(> [class$='_triggerEffort']), [class*='_trigger ']:has(> [class$='_triggerEffort'])");
+          // keep the line glued directly above the composer card — in hero
+          // phase the stack is full-height/centered, so first-child would
+          // strand the line at the stack top far above the card
+          const card = seat.querySelector("[class$='_card'], [class*='_card ']");
+          if (card && statusLine.nextSibling !== card && card.parentNode) {
+            card.parentNode.insertBefore(statusLine, card);
+          }
+          const texts = [];
+          if (modelTrigger) {
+            const label = modelTrigger.querySelector("[class$='_triggerLabel']")?.textContent?.trim();
+            const effort = modelTrigger.querySelector("[class$='_triggerEffort'], [class*='_triggerEffort ']")?.textContent?.trim();
+            if (label) texts.push(label);
+            if (effort) texts.push(effort);
+          }
+          // permission/mode label: another trigger's label (the workspace
+          // trigger's class ends with 'WorkspaceTrigger', never '_trigger',
+          // so it cannot match here)
+          const modeLabel = [...seat.querySelectorAll("[class$='_trigger'] [class$='_triggerLabel'], [class*='_trigger '] [class$='_triggerLabel']")]
+            .filter((el) => !modelTrigger || !modelTrigger.contains(el))
+            .map((el) => el.textContent.trim())
+            .find(Boolean);
+          if (modeLabel) texts.unshift(modeLabel);
+          const text = texts.join(' · ');
+          // write only on change — statusLine lives INSIDE the observed seat,
+          // so an unconditional textContent write would retrigger the observer
+          // and loop forever
+          if (statusLine.textContent !== text) statusLine.textContent = text;
+        };
+        const ensureStatus = () => {
+          const seat = document.querySelector('[data-composer-seat]');
+          if (!seat) {
+            statusSeat = null;
+            if (statusObserver) statusObserver.disconnect();
+            statusObserver = null;
+            statusLine.remove();
+            return;
+          }
+          if (seat !== statusSeat) {
+            statusSeat = seat;
+            const stack = seat.querySelector("[class*='_composerStack']") || seat;
+            stack.insertBefore(statusLine, stack.firstChild);
+            if (statusObserver) statusObserver.disconnect();
+            statusObserver = new MutationObserver(updateStatus);
+            statusObserver.observe(seat, { childList: true, subtree: true, characterData: true });
+          }
+          updateStatus();
+        };
+
         // The frame element can be remounted by the app router; re-attach the
         // scrim whenever the subtree changes and the frame identity differs.
         const ensureScrim = () => {
@@ -329,7 +413,8 @@ html, body, #root { height: 100%; height: 100dvh; }
           }
         };
         ensureScrim();
-        const observer = new MutationObserver(ensureScrim);
+        ensureStatus();
+        const observer = new MutationObserver(() => { ensureScrim(); ensureStatus(); });
         observer.observe(document.getElementById('root') || document.body, { childList: true, subtree: true });
 
         const onScrimClick = () => {
@@ -407,6 +492,8 @@ html, body, #root { height: 100%; height: 100dvh; }
           document.removeEventListener('touchmove', onTouchMove);
           document.removeEventListener('touchend', onTouchEnd);
           document.removeEventListener('touchcancel', onTouchEnd);
+          if (statusObserver) statusObserver.disconnect();
+          statusLine.remove();
           scrim.remove();
           burger.remove();
           style.remove();

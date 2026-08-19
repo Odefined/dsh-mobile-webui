@@ -198,6 +198,18 @@ html, body, #root { height: 100%; height: 100dvh; }
   [data-composer-seat] [class$="_root"],
   [data-composer-seat] [class*="_root_"] { position: static; }
 
+  /* The session header's popovers (background-tasks list, mode picker) are
+     anchored to their tiny trigger roots the same way — the tasks menu is
+     left:0-anchored, so at ~360px root.x(138) + 328px menu goes ~106px off
+     the right edge. Re-anchor them to the full-width header slot: roots go
+     static and the slot becomes the positioned ancestor, so left:0 lands at
+     the screen's left edge and top:calc(100%+5px) glues the menu right
+     below the header. */
+  [data-slot="conversation.session.header"] { position: relative; }
+  [data-slot="conversation.session.header"] [class$="_root"],
+  [data-slot="conversation.session.header"] [class*="_root "],
+  [data-slot="conversation.session.header"] [class*="_root_"] { position: static; }
+
   /* ---- R5: composer & safe area ----
      (attribute names are the DOM dataset sources: data-composer-seat,
      data-conversation-scroll — hyphenated, not camelCase) */

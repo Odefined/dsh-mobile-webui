@@ -254,6 +254,16 @@ html, body, #root { height: 100%; height: 100dvh; }
     max-height: min(60dvh, 520px);
   }
 
+  /* The conversation scroll container carries scrollbar-gutter: stable,
+     which reserves a permanent 8px scrollbar strip on the right (offsetWidth
+     360 vs clientWidth 352). Everything inside — messages AND the composer
+     card — sits 8px short on the right, leaving the composer with a 4px
+     left margin vs 12px right margin (visibly off-center). Phones use
+     overlay scrollbars that consume no layout width, so the stable gutter is
+     pure waste: drop it at mobile widths → symmetric 4px margins and +8px
+     of message width. Desktop keeps the shift-proof stable gutter. */
+  [data-conversation-scroll] { scrollbar-gutter: auto; }
+
   /* ---- R2: message content — wrap prose, scroll code/tables ---- */
   [data-conversation-scroll] p,
   [data-conversation-scroll] li,

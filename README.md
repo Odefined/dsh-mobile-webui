@@ -8,7 +8,13 @@
 > composer row with a small mode · model · effort status line above the card.
 > Pure browser-side, no build step, zero effect on desktop widths.
 
-另有六条布局层规则：①≤768px 隐藏其他插件注入的全屏背景层（`.dsh-viz-canvas` / `.dsh-viz-scrim` / `.dsh-viz-root`，不存在则自然空转）并恢复不透明页面背景——手机上可读性与续航优先；②≤768px 弹出层重锚定：composer 弹出菜单（模型/推理等级、权限模式）的锚定根改为 `position: static`，菜单钳制在 composer 卡片内；顶栏弹出层（后台任务列表等）改为以全宽的会话顶栏槽位为锚点并水平居中——原生小锚点 + `left:0`/`right:0` 在窄屏/系统显示缩放（~360 CSS px）下会把 328px 宽的浮窗推出屏幕外（实测后台任务浮窗出屏 106px）；③≤768px 会话顶栏的 Session log 下载按钮去掉文字标签并清除其 `min-width: 111px`，收成 34px 纯图标；④≤768px 支持手势：明确横向的右滑展开侧边抽屉、左滑收起（触摸移动中越过 64px 阈值即触发；竖向滚动与代码块/表格的横向滚动不受劫持，监听全部 passive）；⑤≤768px composer 底部行图标化：模型切换器隐藏文字与推理等级徽标，并注入一枚中性四角星图标（原生触发器只有文字+徽标+下拉箭头，纯图标化后必须补一枚可辨识 glyph；权限模式按钮本就随 app 规则自动纯图标），同时在输入卡片正上方注入一行 11px 小字实时显示「权限 · 模型 · 思考深度」（从隐藏的 label 读取，切换模型/模式即时更新；隐藏 label 后按钮的可访问名同步进 `aria-label`），彻底解决窄屏下两按钮重叠挤压；⑥≤768px 提问卡页脚允许换行收缩（`flex-wrap` + `margin-left:auto`）——Android 文字自动放大把「跳过本题/提交」按钮撑大后，原生 `flex-shrink:0` + `space-between` 会把提交钮推出卡片右缘裁掉（实测 38px 字体下出屏 42px，修复后换行完整可见）。桌面端均不受影响。
+## 效果演示（360px 宽深色模式实测截图）
+
+| 图标化 composer + 状态行 | 居中后台任务浮窗 |
+|---|---|
+| ![图标化 composer 与状态行](docs/composer.png) | ![居中的后台任务浮窗](docs/tasks-popover.png) |
+
+另有七条布局层规则：①≤768px 隐藏其他插件注入的全屏背景层（`.dsh-viz-canvas` / `.dsh-viz-scrim` / `.dsh-viz-root`，不存在则自然空转）并恢复不透明页面背景——手机上可读性与续航优先；②≤768px 弹出层重锚定：composer 弹出菜单（模型/推理等级、权限模式）的锚定根改为 `position: static`，菜单钳制在 composer 卡片内；顶栏弹出层（后台任务列表等）改为以全宽的会话顶栏槽位为锚点并水平居中——原生小锚点 + `left:0`/`right:0` 在窄屏/系统显示缩放（~360 CSS px）下会把 328px 宽的浮窗推出屏幕外（实测后台任务浮窗出屏 106px）；③≤768px 会话顶栏的 Session log 下载按钮去掉文字标签并清除其 `min-width: 111px`，收成 34px 纯图标；④≤768px 支持手势：明确横向的右滑展开侧边抽屉、左滑收起（触摸移动中越过 64px 阈值即触发；竖向滚动与代码块/表格的横向滚动不受劫持，监听全部 passive）；⑤≤768px composer 底部行图标化：模型切换器隐藏文字与推理等级徽标，并注入一枚中性四角星图标（原生触发器只有文字+徽标+下拉箭头，纯图标化后必须补一枚可辨识 glyph；权限模式按钮本就随 app 规则自动纯图标），同时在输入卡片正上方注入一行 11px 小字实时显示「权限 · 模型 · 思考深度」（从隐藏的 label 读取，切换模型/模式即时更新；隐藏 label 后按钮的可访问名同步进 `aria-label`），彻底解决窄屏下两按钮重叠挤压；⑥≤768px 提问卡页脚允许换行收缩（`flex-wrap` + `margin-left:auto`）——Android 文字自动放大把「跳过本题/提交」按钮撑大后，原生 `flex-shrink:0` + `space-between` 会把提交钮推出卡片右缘裁掉（实测 38px 字体下出屏 42px，修复后换行完整可见）；⑦≤768px 会话滚动容器关闭 `scrollbar-gutter: stable`——桌面端为防滚动条抖动在右侧恒定预留 8px 槽位，导致 composer 卡片左边距 4px、右边距 12px 明显不居中；手机滚动条是覆盖式不占布局，关闭后左右各 4px 对称、消息区增宽 8px（桌面保持 stable 槽不变）。桌面端均不受影响。
 
 所有类名钩子都做词边界锚定（`[class$="_x"]` / `[class*="_x "]`），只命中组件自身的类 token——裸子串匹配会误伤内部子元素（如 `_newSessionLabel`）。
 

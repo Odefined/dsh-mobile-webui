@@ -264,6 +264,45 @@ html, body, #root { height: 100%; height: 100dvh; }
      of message width. Desktop keeps the shift-proof stable gutter. */
   [data-conversation-scroll] { scrollbar-gutter: auto; }
 
+  /* ---- horizontal-overflow clamps ----
+     Any content wider than the viewport gives the conversation container a
+     horizontal scroll range; the whole column (the composer card included)
+     then drifts off-center or clips at the right edge — user-visible as
+     "对话窗没有左右居中". Measured at 360px: scrollWidth 534 vs clientWidth
+     360 at normal font; ~5900 under Android text autosizing.
+     ① message stats span (14:57 · 用时 … · 44 tok/s): white-space:nowrap +
+       min-width:auto in a flex row pushes 174px past the viewport even at
+       normal font. Per user requirement it must stay single-line — so let
+       it shrink and ellipsis instead of wrap. Its _actions parent needs
+       min-width:0 for the shrink to be possible.
+     ② tool-call title (QWLzlG_title token / _title_<hash> class): flex
+       shrink:0 + min-width:auto lets inflated text blow the row to ~1500px.
+     ③ safety net: clip residual overflow at the container. Wide code and
+       tables keep their own inner scroll regions from R2, so no content
+       becomes unreachable. */
+  [data-conversation-scroll] [class$="_actions"] { min-width: 0; }
+  [data-conversation-scroll] [class$="_timeEnd"] {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  [data-conversation-scroll] [class$="_title"] {
+    min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  [data-conversation-scroll] [class$="_root"] { min-width: 0; }
+  [data-conversation-scroll] { overflow-x: hidden; }
+  /* ④ scrollbar compensation: browsers with classic (layout-consuming)
+     scrollbars let the conversation scrollbar eat the right side of the
+     viewport, pushing the whole column — composer card included — off
+     center. JS measures the live scrollbar width into --dsh-mw-scrollbar-w
+     (removed on overlay-scrollbar phones where it is 0) and the same width
+     is mirrored as left padding: column centered, scrollbar kept. */
+  [data-conversation-scroll] { padding-left: var(--dsh-mw-scrollbar-w, 0px); }
+
   /* ---- R2: message content — wrap prose, scroll code/tables ---- */
   [data-conversation-scroll] p,
   [data-conversation-scroll] li,
@@ -484,9 +523,44 @@ html, body, #root { height: 100%; height: 100dvh; }
             frame.appendChild(scrim);
           }
         };
+
+        // ---- scrollbar compensation (mobile) ----
+        // Browsers with classic (layout-consuming) scrollbars let the
+        // conversation scrollbar eat the right side of the viewport and push
+        // the whole column — composer card included — off center (user's
+        // browser showed exactly this). Measure the live scrollbar width and
+        // mirror it as left padding on the container (see the CSS block):
+        // content column centered, scrollbar kept. Overlay-scrollbar phones
+        // measure 0 → the var is removed → zero behavioral change there.
+        let compScrollEl = null;
+        let compRO = null;
+        const measureScrollbar = () => {
+          if (!compScrollEl) return;
+          const host = document.querySelector('[data-phase]');
+          if (!host) return;
+          const w = compScrollEl.offsetWidth - compScrollEl.clientWidth;
+          const next = w > 0 ? w + 'px' : '';
+          if (host.style.getPropertyValue('--dsh-mw-scrollbar-w') !== next) {
+            if (next) host.style.setProperty('--dsh-mw-scrollbar-w', next);
+            else host.style.removeProperty('--dsh-mw-scrollbar-w');
+          }
+        };
+        const ensureScrollbarComp = () => {
+          const el = document.querySelector('[data-conversation-scroll]');
+          if (el === compScrollEl) { return; }
+          if (compRO) { compRO.disconnect(); compRO = null; }
+          compScrollEl = null;
+          if (!el) return;
+          compScrollEl = el;
+          compRO = new ResizeObserver(measureScrollbar);
+          compRO.observe(el);
+          measureScrollbar();
+        };
+
         ensureScrim();
         ensureStatus();
-        const observer = new MutationObserver(() => { ensureScrim(); ensureStatus(); });
+        ensureScrollbarComp();
+        const observer = new MutationObserver(() => { ensureScrim(); ensureStatus(); ensureScrollbarComp(); });
         observer.observe(document.getElementById('root') || document.body, { childList: true, subtree: true });
 
         const onScrimClick = () => {
@@ -566,6 +640,8 @@ html, body, #root { height: 100%; height: 100dvh; }
           document.removeEventListener('touchcancel', onTouchEnd);
           if (statusObserver) statusObserver.disconnect();
           statusLine.remove();
+          if (compRO) compRO.disconnect();
+          document.querySelector('[data-phase]')?.style.removeProperty('--dsh-mw-scrollbar-w');
           scrim.remove();
           burger.remove();
           style.remove();

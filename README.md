@@ -8,16 +8,7 @@
 > composer row with a small mode · model · effort status line above the card.
 > Pure browser-side, no build step, zero effect on desktop widths.
 
-## 修复内容
-
-| 编号 | 内容 | 实现 |
-|---|---|---|
-| R1 | 布局：单列全宽聊天 + 抽屉收纳侧边栏 | ≤768px 无常驻轨道：grid 恒为单列，收起态侧边栏整体隐藏；入口是悬浮于左上角的原版侧边栏按钮（app 的 panel 图标 + 36px 原尺寸 + 0.45 透明度）；展开态侧边栏/详情面板为不透明覆盖式抽屉（`--dsw-alias-bg-layer-1`），遮罩点击 / Escape / 选中会话后自动关闭 |
-| R2 | 消息渲染 | 正文/行内代码自动断词（`overflow-wrap`），代码块与表格容器内横向滚动 |
-| R5 | composer 与视口 | `html/body/#root` 高度升级为 `100dvh`；meta viewport 补 `viewport-fit=cover` + `interactive-widget=resizes-content`；composer 加 `env(safe-area-inset-bottom)` 与 dvh 高度上限 |
-| R6 | 触控 | `(pointer: coarse)` 下侧边栏/会话列表/审批按钮 ≥44px；composer 内只把纯图标按钮（`button:has(> svg:only-child)`）顶到 44px，带文字的触发器保持原生尺寸以免撑破行布局 |
-
-另有五条布局层规则：①≤768px 隐藏其他插件注入的全屏背景层（`.dsh-viz-canvas` / `.dsh-viz-scrim` / `.dsh-viz-root`，不存在则自然空转）并恢复不透明页面背景——手机上可读性与续航优先；②≤768px 弹出层重锚定：composer 弹出菜单（模型/推理等级、权限模式）的锚定根改为 `position: static`，菜单钳制在 composer 卡片内；顶栏弹出层（后台任务列表等）同理改为以全宽的会话顶栏槽位为锚点——原生小锚点 + `left:0`/`right:0` 在窄屏/系统显示缩放（~360 CSS px）下会把 328px 宽的浮窗推出屏幕外（实测后台任务浮窗出屏 106px）；③≤768px 会话顶栏的 Session log 下载按钮去掉文字标签并清除其 `min-width: 111px`，收成 34px 纯图标；④≤768px 支持手势：明确横向的右滑展开侧边抽屉、左滑收起（触摸移动中越过 64px 阈值即触发；竖向滚动与代码块/表格的横向滚动不受劫持，监听全部 passive）；⑤≤768px composer 底部行图标化：模型切换器隐藏文字与推理等级徽标，并注入一枚中性四角星图标（原生触发器只有文字+徽标+下拉箭头，纯图标化后必须补一枚可辨识 glyph；权限模式按钮本就随 app 规则自动纯图标），同时在输入卡片正上方注入一行 11px 小字实时显示「权限 · 模型 · 思考深度」（从隐藏的 label 读取，切换模型/模式即时更新；隐藏 label 后按钮的可访问名同步进 `aria-label`），彻底解决窄屏下两按钮重叠挤压。桌面端均不受影响。
+另有六条布局层规则：①≤768px 隐藏其他插件注入的全屏背景层（`.dsh-viz-canvas` / `.dsh-viz-scrim` / `.dsh-viz-root`，不存在则自然空转）并恢复不透明页面背景——手机上可读性与续航优先；②≤768px 弹出层重锚定：composer 弹出菜单（模型/推理等级、权限模式）的锚定根改为 `position: static`，菜单钳制在 composer 卡片内；顶栏弹出层（后台任务列表等）改为以全宽的会话顶栏槽位为锚点并水平居中——原生小锚点 + `left:0`/`right:0` 在窄屏/系统显示缩放（~360 CSS px）下会把 328px 宽的浮窗推出屏幕外（实测后台任务浮窗出屏 106px）；③≤768px 会话顶栏的 Session log 下载按钮去掉文字标签并清除其 `min-width: 111px`，收成 34px 纯图标；④≤768px 支持手势：明确横向的右滑展开侧边抽屉、左滑收起（触摸移动中越过 64px 阈值即触发；竖向滚动与代码块/表格的横向滚动不受劫持，监听全部 passive）；⑤≤768px composer 底部行图标化：模型切换器隐藏文字与推理等级徽标，并注入一枚中性四角星图标（原生触发器只有文字+徽标+下拉箭头，纯图标化后必须补一枚可辨识 glyph；权限模式按钮本就随 app 规则自动纯图标），同时在输入卡片正上方注入一行 11px 小字实时显示「权限 · 模型 · 思考深度」（从隐藏的 label 读取，切换模型/模式即时更新；隐藏 label 后按钮的可访问名同步进 `aria-label`），彻底解决窄屏下两按钮重叠挤压；⑥≤768px 提问卡页脚允许换行收缩（`flex-wrap` + `margin-left:auto`）——Android 文字自动放大把「跳过本题/提交」按钮撑大后，原生 `flex-shrink:0` + `space-between` 会把提交钮推出卡片右缘裁掉（实测 38px 字体下出屏 42px，修复后换行完整可见）。桌面端均不受影响。
 
 所有类名钩子都做词边界锚定（`[class$="_x"]` / `[class*="_x "]`），只命中组件自身的类 token——裸子串匹配会误伤内部子元素（如 `_newSessionLabel`）。
 
@@ -54,7 +45,7 @@ DOM 干预仅四处：注入遮罩 `<div>`、抽屉入口 `<button>`、composer 
   "dsh": { "profile": { "bundles": ["...", "dsh-mobile-webui"] } },
   "dependencies": {
     // npm（推荐）：
-    "dsh-mobile-webui": "^0.2.0"
+    "dsh-mobile-webui": "^0.2.2"
     // 或 GitHub 直装：
     // "dsh-mobile-webui": "github:Odefined/dsh-mobile-webui"
   }

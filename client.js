@@ -209,6 +209,33 @@ html, body, #root { height: 100%; height: 100dvh; }
   [data-slot="conversation.session.header"] [class$="_root"],
   [data-slot="conversation.session.header"] [class*="_root "],
   [data-slot="conversation.session.header"] [class*="_root_"] { position: static; }
+  /* ...then center them: left:0 against the full-width slot hugged the
+     screen's left edge (0px left margin vs 32px right at 360px) */
+  [data-slot="conversation.session.header"] [class$="_menu"],
+  [data-slot="conversation.session.header"] [class*="_menu "] {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* The ask-question card footer (pager | 跳过本题 | 提交) lays out with
+     justify-content: space-between and flex-shrink:0 buttons. Android text
+     autosizing inflates the button labels and pushes 提交 past the card's
+     right edge (user-confirmed horizontal cut). Let the footer wrap and the
+     action group shrink/wrap instead — margin-left:auto keeps the actions
+     right-aligned on both the shared row and the wrapped row. */
+  [data-conversation-scroll] [class$="_card"]:has([class$="_options"]) [class$="_footer"],
+  [data-conversation-scroll] [class$="_card"]:has([class$="_options"]) [class*="_footer "] {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  [data-conversation-scroll] [class$="_card"]:has([class$="_options"]) [class$="_footerActions"],
+  [data-conversation-scroll] [class$="_card"]:has([class$="_options"]) [class*="_footerActions "] {
+    flex-shrink: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: auto;
+  }
 
   /* ---- R5: composer & safe area ----
      (attribute names are the DOM dataset sources: data-composer-seat,

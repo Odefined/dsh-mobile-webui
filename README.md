@@ -4,8 +4,9 @@
 
 > Mobile-viewport fixes for the dsh web GUI as a client plugin: full-width chat
 > with an overlay drawer sidebar, swipe gestures, safe-area/dvh composer,
-> code-block horizontal scrolling and 44px touch targets. Pure browser-side,
-> no build step, zero effect on desktop widths.
+> code-block horizontal scrolling, 44px touch targets, and an icon-only
+> composer row with a small mode · model · effort status line above the card.
+> Pure browser-side, no build step, zero effect on desktop widths.
 
 ## 修复内容
 
@@ -42,7 +43,7 @@
 - 类名后缀 + 词边界锚定：`[class*="_frame"]:has(> [class*="_sidebarCol"])` 等
 - 内联 `grid-template-columns` 与内联宽度用 `!important` 覆盖
 
-DOM 干预仅三处：注入一个遮罩 `<div>` 和一个抽屉入口 `<button>`（显隐均纯 CSS 控制），修改 viewport meta。全部改动 ≤768px 或 coarse 指针下生效。
+DOM 干预仅四处：注入遮罩 `<div>`、抽屉入口 `<button>`、composer 状态行 `<div>`、模型触发器图标 `<span>`（显隐均纯 CSS 控制），修改 viewport meta。全部改动 ≤768px 或 coarse 指针下生效。
 
 ## 安装
 
@@ -53,7 +54,7 @@ DOM 干预仅三处：注入一个遮罩 `<div>` 和一个抽屉入口 `<button>
   "dsh": { "profile": { "bundles": ["...", "dsh-mobile-webui"] } },
   "dependencies": {
     // npm（推荐）：
-    "dsh-mobile-webui": "^0.1.0"
+    "dsh-mobile-webui": "^0.2.0"
     // 或 GitHub 直装：
     // "dsh-mobile-webui": "github:Odefined/dsh-mobile-webui"
   }
@@ -89,11 +90,13 @@ await page.evaluate(() => {
 });
 ```
 
-视口 390×844 + 触屏模拟检查点：无常驻轨道、聊天列全宽、左上角原版入口按钮；
+视口 360×800 / 390×844 + 触屏模拟检查点：无常驻轨道、聊天列全宽、左上角原版入口按钮；
 点入口 → 不透明抽屉 + 48% 遮罩；遮罩点击 / Escape / 选中会话 / 左滑 → 抽屉关闭；
 右滑 → 抽屉展开；`pre`/`table` 容器内横向滚动；`(pointer: coarse)` 下图标按钮 ≥44px；
+composer 行纯图标不重叠，卡片正上方状态行显示「权限 · 模型 · 思考深度」；
+顶栏 Session log 按钮为 34px 纯图标；
 meta viewport 含 `viewport-fit=cover` 与 `interactive-widget=resizes-content`。
-桌面 ≥769px 所有规则不生效（侧边栏内联展开、入口按钮不出现、背景层正常）。
+桌面 ≥769px 所有规则不生效（侧边栏内联展开、入口按钮不出现、composer 文字标签保留、背景层正常）。
 
 ## 卸载
 

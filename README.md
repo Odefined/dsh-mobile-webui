@@ -1,5 +1,7 @@
 # dsh-mobile-webui
 
+[English](README.en.md) | **中文**
+
 修复 dsh web GUI 在手机视口下的可用性问题（客户端插件，纯浏览器端，无构建步骤）。
 
 > Mobile-viewport fixes for the dsh web GUI as a client plugin: full-width chat

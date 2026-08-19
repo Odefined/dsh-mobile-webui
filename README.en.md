@@ -19,7 +19,7 @@ code-block horizontal scrolling, 44px touch targets, and an icon-only
 composer row with a small mode · model · effort status line above the card.
 Pure browser-side, no build step, zero effect on desktop widths.
 
-Eight layout-layer rules additionally apply: ①≤768px hides fullscreen
+Nine layout-layer rules additionally apply: ①≤768px hides fullscreen
 background layers injected by other plugins (`.dsh-viz-canvas` /
 `.dsh-viz-scrim` / `.dsh-viz-root`; no-ops when absent) and restores an opaque
 page background — readability and battery come first on phones; ②≤768px
@@ -62,7 +62,17 @@ reads as "never centered". For browsers with classic scrollbars (the
 persistent, layout-consuming kind some Android browsers/WebViews ship), JS
 measures the live scrollbar width into `--dsh-mw-scrollbar-w` and mirrors it
 as left padding: the scrollbar stays, the content column centers; overlay
-devices measure 0 and see zero behavioral change. Desktop is unaffected by
+devices measure 0 and see zero behavioral change; ⑨≤768px settings-panel
+full-screen rewrite: the native 312px floating dialog splits row-wise — the
+tab nav alone takes 188px (60%), leaving a 124px content column where text
+wraps one character per line (unusable). The rewrite makes the dialog
+full-screen (100vw×100dvh, zero radius), switches to a column layout, turns
+the tab nav into a horizontally scrollable single-row button strip on top
+(36px, plus a fix for the stock label collapsing to zero width via
+flex-basis:0), and gives the content full width. The hook
+`[role="dialog"][aria-modal="true"]:has(> nav)` matches only the settings
+panel — confirmations and pickers are untouched (idea adapted from
+AcidGr/dsh-web-mobile-fix, MIT). Desktop is unaffected by
 all of the above.
 
 All class-name hooks are token-boundary anchored (`[class$="_x"]` /
@@ -131,7 +141,7 @@ Register the bundle and add the dependency in your local dsh web profile
   "dsh": { "profile": { "bundles": ["...", "dsh-mobile-webui"] } },
   "dependencies": {
     // npm (recommended):
-    "dsh-mobile-webui": "^0.2.3"
+    "dsh-mobile-webui": "^0.3.0"
     // or straight from GitHub:
     // "dsh-mobile-webui": "github:Odefined/dsh-mobile-webui"
   }
@@ -175,7 +185,9 @@ entry → opaque drawer + 48% scrim; scrim click / Escape / session pick /
 left swipe → drawer closes; right swipe → drawer opens; horizontal scrolling
 inside `pre`/`table` containers; icon buttons ≥44px under
 `(pointer: coarse)`; the composer row is icon-only without overlap, and the
-status line right above the card shows "permission · model · effort"; the
+status line right above the card shows "permission · model · effort";
+drawer → Settings opens a full-screen settings panel with a scrollable tab
+strip and full-width readable content; the
 header Session-log button is a 34px icon; the viewport meta includes
 `viewport-fit=cover` and `interactive-widget=resizes-content`.
 At ≥769px none of the rules apply (sidebar inline-expanded, entry button

@@ -237,6 +237,58 @@ html, body, #root { height: 100%; height: 100dvh; }
     margin-left: auto;
   }
 
+  /* ---- settings panel: full-screen rewrite ----
+     Native at 360px: a 312px floating dialog with flex-direction:row — the
+     tab nav alone takes 188px (60%), leaving a 124px content column where
+     text wraps one character per line (measured + screenshotted). Rewrite:
+     full-screen dialog, column layout, the tab nav becomes a horizontally
+     scrollable button row on top, content full-width below. Scoped by
+     :has(> nav) so other aria-modal dialogs (confirmations, pickers) are
+     untouched. Idea adapted from AcidGr/dsh-web-mobile-fix (MIT); the hooks
+     and specificity are our own. */
+  [role="dialog"][aria-modal="true"][aria-labelledby]:has(> nav) {
+    flex-direction: column;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  [role="dialog"][aria-modal="true"][aria-labelledby]:has(> nav) > nav {
+    flex: none;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 12px 6px;
+  }
+  [role="dialog"][aria-modal="true"][aria-labelledby]:has(> nav) > nav > div:last-child {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  [role="dialog"][aria-modal="true"][aria-labelledby]:has(> nav) > nav button {
+    flex: 0 0 auto;
+    height: 36px;
+    padding: 6px 12px;
+    gap: 6px;
+    justify-content: center;
+  }
+  /* the stock tab label is flex:1 / flex-basis:0 and collapses to zero
+     width inside a content-sized button — let the text drive the width */
+  [role="dialog"][aria-modal="true"][aria-labelledby]:has(> nav) > nav button > :last-child {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  [role="dialog"][aria-modal="true"][aria-labelledby]:has(> nav) > nav button[aria-current="true"] {
+    background: var(--dsw-specific-sidebar-nav-item-active, #e8ebf1);
+  }
+  [role="dialog"][aria-modal="true"][aria-labelledby]:has(> nav) > nav + div {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
   /* ---- R5: composer & safe area ----
      (attribute names are the DOM dataset sources: data-composer-seat,
      data-conversation-scroll — hyphenated, not camelCase) */

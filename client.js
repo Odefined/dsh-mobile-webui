@@ -53,6 +53,9 @@ html, body, #root { height: 100%; height: 100dvh; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* injected model-trigger icon (shown ≤768px only — the trigger natively
+   has no icon: text label + effort badge + chevron) */
+.dsh-mw-model-icon { display: none; }
 
 @keyframes dsh-mw-drawer-left-in { from { transform: translateX(-100%); } }
 @keyframes dsh-mw-drawer-right-in { from { transform: translateX(100%); } }
@@ -170,6 +173,7 @@ html, body, #root { height: 100%; height: 100dvh; }
   [data-composer-seat] [class$="_triggerEffort"],
   [data-composer-seat] [class*="_triggerEffort "] { display: none; }
   .dsh-mw-composer-status { display: block; }
+  .dsh-mw-model-icon { display: inline-flex; }
 
   /* Full-screen background layers from other plugins (a music visualizer's
      .dsh-viz-canvas/.dsh-viz-scrim plus its .dsh-viz-root floating trigger)
@@ -356,6 +360,25 @@ html, body, #root { height: 100%; height: 100dvh; }
           const card = seat.querySelector("[class$='_card'], [class*='_card ']");
           if (card && statusLine.nextSibling !== card && card.parentNode) {
             card.parentNode.insertBefore(statusLine, card);
+          }
+          if (modelTrigger) {
+            // inject the model icon once per (re)mounted trigger — guarded by
+            // presence so the seat observer cannot loop on it
+            if (!modelTrigger.querySelector('.dsh-mw-model-icon')) {
+              const icon = document.createElement('span');
+              icon.className = 'dsh-mw-model-icon';
+              icon.setAttribute('aria-hidden', 'true');
+              // neutral four-point sparkle, filled currentColor, 14px — same
+              // visual language as the app's own geometric glyphs
+              icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0.7L8.4 5.6L13.3 7L8.4 8.4L7 13.3L5.6 8.4L0.7 7L5.6 5.6Z" fill="currentColor"/></svg>';
+              modelTrigger.insertBefore(icon, modelTrigger.firstChild);
+            }
+            // the label is display:none on phones, so it no longer gives the
+            // button an accessible name — mirror it into aria-label
+            const labelText = modelTrigger.querySelector("[class$='_triggerLabel']")?.textContent?.trim();
+            if (labelText && modelTrigger.getAttribute('aria-label') !== labelText) {
+              modelTrigger.setAttribute('aria-label', labelText);
+            }
           }
           const texts = [];
           if (modelTrigger) {
